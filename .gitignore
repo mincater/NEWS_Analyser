@@ -1,0 +1,24 @@
+# Virtual environment folder
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment and sensitive keys
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+
+# Streamlit local configs
+.streamlit/
+
+# OS files
+.DS_Store
+Thumbs.db
