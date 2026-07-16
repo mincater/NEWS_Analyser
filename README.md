@@ -21,7 +21,7 @@ graph TD
     D --> F[LangChain LLM Chains]
     
     %% NLP Pipeline
-    subgraph Traditional NLP Pipeline (nlp_utils.py)
+    subgraph "Traditional NLP Pipeline (nlp_utils.py)"
         E --> E1[Sentence & Word Tokenization]
         E1 --> E2[Stopword Filtering]
         E2 --> E3[WordNet Lemmatization]
@@ -29,7 +29,7 @@ graph TD
     end
     
     %% LLM Chains
-    subgraph LangChain & Gemini AI (llm_utils.py)
+    subgraph "LangChain & Gemini AI (llm_utils.py)"
         F --> F1[Summarization Chain]
         F1 --> F1a[TL;DR, Bullets, Narrative]
         
@@ -69,7 +69,7 @@ graph TD
 
 - **Frontend**: [Streamlit](https://streamlit.io/) (enhanced with custom CSS)
 - **LLM Orchestration**: [LangChain](https://www.langchain.com/) (using LCEL chains)
-- **Generative AI Model**: Google Gemini (`gemini-1.5-flash` for high-speed reasoning and JSON output)
+- **Generative AI Model**: Google Gemini (`gemini-3.5-flash` for high-speed reasoning and JSON output)
 - **Traditional NLP**: [NLTK](https://www.nltk.org/) (Tokenizers, Stopwords, WordNet Lemmatizer, POS Tagger)
 - **Data Scraping**: [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/) & [Requests](https://requests.readthedocs.io/)
 - **Visualizations**: [Plotly Express](https://plotly.com/), [WordCloud](https://github.com/amueller/word_cloud), and [Matplotlib](https://matplotlib.org/)
