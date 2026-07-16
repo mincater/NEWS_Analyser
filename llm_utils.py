@@ -71,26 +71,26 @@ def analyze_sentiment_and_entities(text: str, api_key: str = None) -> dict:
             "and extract sentiment and key entities. You MUST return ONLY a valid JSON object matching the schema below. "
             "Do not wrap the JSON in markdown code blocks like ```json ... ```, return ONLY the raw JSON text.\n\n"
             "JSON Schema:\n"
-            "{\n"
+            "{{\n"
             '  "sentiment": "Positive" | "Negative" | "Neutral",\n'
             '  "confidence_score": 0.0 to 1.0 (float),\n'
             '  "sentiment_explanation": "brief explanation why this sentiment was chosen based on tone/words",\n'
-            '  "emotion_breakdown": {\n'
+            '  "emotion_breakdown": {{\n'
             '    "joy": 0.0 to 1.0,\n'
             '    "sadness": 0.0 to 1.0,\n'
             '    "anger": 0.0 to 1.0,\n'
             '    "fear": 0.0 to 1.0,\n'
             '    "surprise": 0.0 to 1.0,\n'
             '    "analytical": 0.0 to 1.0\n'
-            "  },\n"
+            "  }},\n"
             '  "entities": [\n'
-            "    {\n"
+            "    {{\n"
             '      "name": "Entity Name (e.g. Google, Joe Biden)",\n'
             '      "type": "Person" | "Organization" | "Location" | "Date" | "Technology" | "Other",\n'
             '      "relevance": "Brief description of their role/context in this article"\n'
-            "    }\n"
+            "    }}\n"
             "  ]\n"
-            "}"
+            "}}"
         )
         
         prompt = ChatPromptTemplate.from_messages([
