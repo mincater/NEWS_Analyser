@@ -4,7 +4,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser, SimpleJsonOutputParser
 
-def get_llm(api_key: str = None, model_name: str = "gemini-1.5-flash", temperature: float = 0.2):
+def get_llm(api_key: str = None, model_name: str = "gemini-3.5-flash", temperature: float = 0.2):
     """
     Initializes and returns the ChatGoogleGenerativeAI model.
     Prioritizes the passed API key, otherwise falls back to GEMINI_API_KEY env variable.
@@ -26,7 +26,7 @@ def generate_summary(text: str, summary_type: str, api_key: str = None) -> str:
     Types: 'Quick TL;DR', 'Detailed Summary', 'Bullet Points'
     """
     try:
-        llm = get_llm(api_key=api_key, model_name="gemini-1.5-flash", temperature=0.3)
+        llm = get_llm(api_key=api_key, model_name="gemini-3.5-flash", temperature=0.3)
         
         # Define prompts based on type
         if summary_type == "Quick TL;DR":
@@ -64,7 +64,7 @@ def analyze_sentiment_and_entities(text: str, api_key: str = None) -> dict:
     """
     try:
         # Initialize LLM with temperature 0 for consistent structured outputs
-        llm = get_llm(api_key=api_key, model_name="gemini-1.5-flash", temperature=0.0)
+        llm = get_llm(api_key=api_key, model_name="gemini-3.5-flash", temperature=0.0)
         
         system_prompt = (
             "You are a precise data extraction agent. Analyze the provided news article "
@@ -131,7 +131,7 @@ def answer_article_question(text: str, question: str, chat_history: list = None,
     """
     try:
         # Pro has a bit better reasoning for QA, but Flash is fine and faster. Let's use Flash.
-        llm = get_llm(api_key=api_key, model_name="gemini-1.5-flash", temperature=0.2)
+        llm = get_llm(api_key=api_key, model_name="gemini-3.5-flash", temperature=0.2)
         
         system_prompt = (
             "You are an intelligent QA assistant specializing in news analysis.\n"
