@@ -5,10 +5,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser, SimpleJsonOutputParser
 
 def get_llm(api_key: str = None, model_name: str = "gemini-3.5-flash", temperature: float = 0.2):
-    """
-    Initializes and returns the ChatGoogleGenerativeAI model.
-    Prioritizes the passed API key, otherwise falls back to GEMINI_API_KEY env variable.
-    """
+    """Initialize ChatGoogleGenerativeAI model."""
     effective_api_key = api_key or os.environ.get("GEMINI_API_KEY")
     if not effective_api_key:
         raise ValueError("Gemini API Key is missing. Please set the GEMINI_API_KEY environment variable.")
@@ -21,14 +18,10 @@ def get_llm(api_key: str = None, model_name: str = "gemini-3.5-flash", temperatu
     )
 
 def generate_summary(text: str, summary_type: str, api_key: str = None) -> str:
-    """
-    Generates a summary based on the requested format.
-    Types: 'Quick TL;DR', 'Detailed Summary', 'Bullet Points'
-    """
+    """Generate summary according to the specified format."""
     try:
         llm = get_llm(api_key=api_key, model_name="gemini-3.5-flash", temperature=0.3)
         
-        # Define prompts based on type
         if summary_type == "Quick TL;DR":
             system_prompt = (
                 "You are a professional editor. Write a concise, 2-3 sentence summary (TL;DR) "
@@ -39,7 +32,7 @@ def generate_summary(text: str, summary_type: str, api_key: str = None) -> str:
                 "You are an analytical assistant. Extract the key takeaways and facts from the following "
                 "news article and list them as bullet points (max 6-8 bullets). Focus on who, what, when, where, and why."
             )
-        else: # Detailed Summary
+        else:
             system_prompt = (
                 "You are a journalist. Provide a comprehensive summary of the following news article. "
                 "Structure it with a main summary paragraph, followed by subheadings or paragraphs "
@@ -51,7 +44,6 @@ def generate_summary(text: str, summary_type: str, api_key: str = None) -> str:
             ("user", "Article Content:\n\n{article_text}")
         ])
         
-        # Simple LCEL Chain
         chain = prompt | llm | StrOutputParser()
         return chain.invoke({"article_text": text})
         
@@ -59,11 +51,8 @@ def generate_summary(text: str, summary_type: str, api_key: str = None) -> str:
         return f"Error generating summary: {str(e)}"
 
 def analyze_sentiment_and_entities(text: str, api_key: str = None) -> dict:
-    """
-    Performs sentiment analysis and key entity extraction in a single structured JSON response.
-    """
+    """Analyze sentiment and extract key entities as structured JSON."""
     try:
-        # Initialize LLM with temperature 0 for consistent structured outputs
         llm = get_llm(api_key=api_key, model_name="gemini-3.5-flash", temperature=0.0)
         
         system_prompt = (
@@ -98,17 +87,13 @@ def analyze_sentiment_and_entities(text: str, api_key: str = None) -> dict:
             ("user", "Article Content:\n\n{article_text}")
         ])
         
-        # Simple JSON parser chain
         chain = prompt | llm | SimpleJsonOutputParser()
         result = chain.invoke({"article_text": text})
         return result
         
     except Exception as e:
-        # Fallback dictionary structure in case of parsing errors or api limits
         error_msg = str(e)
-        # Attempt to see if we can clean up common json wraps if it returned string instead
         try:
-            # Check if it was returned as string inside the exception or message
             if "{" in error_msg:
                 start = error_msg.find("{")
                 end = error_msg.rfind("}") + 1
@@ -125,12 +110,8 @@ def analyze_sentiment_and_entities(text: str, api_key: str = None) -> dict:
         }
 
 def answer_article_question(text: str, question: str, chat_history: list = None, api_key: str = None) -> str:
-    """
-    Answers user's questions about the article context.
-    Uses the Gemini model grounded by the article text.
-    """
+    """Answer question based on the news article."""
     try:
-        # Pro has a bit better reasoning for QA, but Flash is fine and faster. Let's use Flash.
         llm = get_llm(api_key=api_key, model_name="gemini-3.5-flash", temperature=0.2)
         
         system_prompt = (
@@ -145,11 +126,10 @@ def answer_article_question(text: str, question: str, chat_history: list = None,
             "Do not make up facts or use external knowledge. Be factual, concise, and professional."
         )
         
-        # We can pass chat history if present for multi-turn conversation
         messages = [("system", system_prompt)]
         
         if chat_history:
-            for speaker, msg in chat_history[-6:]: # Keep last 3 turns
+            for speaker, msg in chat_history[-6:]:
                 role = "user" if speaker == "User" else "assistant"
                 messages.append((role, msg))
                 

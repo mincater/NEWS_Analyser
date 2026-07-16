@@ -9,14 +9,11 @@ from bs4 import BeautifulSoup
 import requests
 from dotenv import load_dotenv
 
-# Load local environment variables if present (override=True updates keys dynamically)
 load_dotenv(override=True)
 
-# Import our custom utilities
 import nlp_utils
 import llm_utils
 
-# --- PAGE CONFIGURATION ---
 st.set_page_config(
     page_title="News.AI | Intelligent News Analyst",
     page_icon="📰",
@@ -24,7 +21,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- CUSTOM CSS & GLASSMORPHISM AESTHETICS ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
@@ -136,11 +132,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# --- WEB SCRAPING UTILITY ---
 def fetch_article_text(url: str) -> dict:
     """Scrapes clean text from a news article URL with robust fallback parsing."""
     try:
-        # Standard headers to mimic a browser
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -150,7 +144,6 @@ def fetch_article_text(url: str) -> dict:
             'Upgrade-Insecure-Requests': '1'
         }
         
-        # Try fetching with verification, fallback to unverified if SSL error
         try:
             res = requests.get(url, headers=headers, timeout=12)
         except requests.exceptions.SSLError:
@@ -160,13 +153,10 @@ def fetch_article_text(url: str) -> dict:
         
         soup = BeautifulSoup(res.content, 'html.parser')
         
-        # 1. Clean up boilerplates and noise
         for noise in soup(["script", "style", "nav", "footer", "header", "aside", "form", "iframe", "noscript"]):
             noise.decompose()
             
-        # 2. Extract title
         title = ""
-        # Look for typical article title elements
         title_tag = soup.find('h1') or soup.find('meta', property='og:title')
         if title_tag:
             title = title_tag.get_text().strip() if hasattr(title_tag, 'get_text') else title_tag.get('content', '')
@@ -174,8 +164,6 @@ def fetch_article_text(url: str) -> dict:
         if not title:
             title = soup.title.get_text().strip() if soup.title else "Extracted Article"
             
-        # 3. Extract core text content
-        # Check standard article containers first to find focused text
         article_body = soup.find('article')
         if not article_body:
             article_body = soup.find(attrs={"itemprop": "articleBody"})
@@ -190,21 +178,17 @@ def fetch_article_text(url: str) -> dict:
                     
         container = article_body if article_body else soup
         
-        # Find paragraphs inside the selected container
         paragraphs = container.find_all('p')
         texts = []
         for p in paragraphs:
             pt = p.get_text().strip()
-            # Eliminate extremely short lines (ads, sharing prompts)
             if len(pt) > 40:
                 texts.append(pt)
                 
         full_text = "\n\n".join(texts)
         
-        # Fallback if no paragraph tags yielded enough content
         if not full_text or len(full_text.split()) < 50:
             lines = [line.strip() for line in container.get_text().splitlines() if line.strip()]
-            # Filter out lines that look like headers/footers (too short or menu items)
             text_blocks = [line for line in lines if len(line) > 60]
             full_text = "\n\n".join(text_blocks)
             
@@ -215,7 +199,6 @@ def fetch_article_text(url: str) -> dict:
     except Exception as e:
         return {"success": False, "error": str(e), "title": "", "text": ""}
 
-# --- APP INITIALIZATION ---
 if "raw_text" not in st.session_state:
     st.session_state.raw_text = ""
 if "title" not in st.session_state:
@@ -237,20 +220,17 @@ if "prev_source_type" not in st.session_state:
 if "api_key" not in st.session_state:
     st.session_state.api_key = os.environ.get("GEMINI_API_KEY", "")
 
-# --- SIDEBAR: CONFIG & INPUTS ---
 with st.sidebar:
     st.image("https://img.icons8.com/color/96/artificial-intelligence.png", width=70)
     st.title("News.AI Engine")
     st.markdown("Select your news input source below.")
     
-    # Input source configuration
     st.subheader("Source Selection")
     source_type = st.radio(
         "Choose Input Method",
         ["Enter Article URL", "Paste Raw Text"]
     )
     
-    # Clear analysis state if input method changes to avoid mixing content
     if source_type != st.session_state.prev_source_type:
         st.session_state.raw_text = ""
         st.session_state.title = ""
@@ -304,53 +284,42 @@ with st.sidebar:
         "💡 **💡 Tip:** This application processes text locally using NLTK and connects to Gemini models using LangChain for summaries, structured sentiment data, and contextual question-answering."
     )
 
-# --- MAIN PAGE HUB ---
 st.markdown("<h1 class='gradient-text'>News.AI Dashboard</h1>", unsafe_allow_html=True)
 st.markdown("<p class='subtitle-text'>Intelligent News Summarization, Sentiment Analysis, and Grounded QA powered by LLMs</p>", unsafe_allow_html=True)
 
-# Determine if we should show input text status
 if staged_text:
-    # Quick Summary Metrics of Input Text
     char_count = len(staged_text)
     word_count = len(staged_text.split())
     
-    # Display details of the active text in an expander
     with st.expander(f"📖 Active Article: {staged_title or 'Untitled'} ({word_count} words)", expanded=False):
         if staged_title:
             st.markdown(f"### {staged_title}")
         st.write(staged_text)
         
-    # Process trigger button
     trigger_col1, trigger_col2 = st.columns([1, 3])
     with trigger_col1:
         start_analysis = st.button("🚀 Analyze Article", type="primary", use_container_width=True)
     
     if start_analysis:
-        # Clear past chat history on new article run
         st.session_state.chat_history = []
         st.session_state.raw_text = staged_text
         st.session_state.title = staged_title or "News Article"
         
         with st.spinner("Analyzing text and generating summaries..."):
-            # 1. Traditional NLP Preprocessing
             st.session_state.nlp_results = nlp_utils.perform_nlp_preprocessing(st.session_state.raw_text)
             
-            # Check for API key
             if not st.session_state.api_key:
                 st.warning("⚠️ Traditional NLP completed. Please configure the GEMINI_API_KEY environment variable for LLM summarization, sentiment extraction, and QA.")
             else:
-                # 2. LLM Summaries (Parallelizable or sequential. Let's fetch them using our chains)
                 st.session_state.summary_tldr = llm_utils.generate_summary(st.session_state.raw_text, "Quick TL;DR", st.session_state.api_key)
                 st.session_state.summary_bullets = llm_utils.generate_summary(st.session_state.raw_text, "Bullet Points", st.session_state.api_key)
                 st.session_state.summary_detailed = llm_utils.generate_summary(st.session_state.raw_text, "Detailed Summary", st.session_state.api_key)
                 
-                # 3. Structured Sentiment and Entity Extraction
                 st.session_state.llm_analysis = llm_utils.analyze_sentiment_and_entities(st.session_state.raw_text, st.session_state.api_key)
                 st.toast("Analysis complete!", icon="🎉")
                 st.rerun()
 
 else:
-    # Empty state instructions
     st.markdown("""
     <div class='glass-card' style='text-align: center; padding: 50px 20px;'>
         <img src='https://img.icons8.com/color/96/news.png' width='100'/><br/><br/>
@@ -359,9 +328,7 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-# --- DISPLAY ANALYSIS RESULTS ---
 if st.session_state.raw_text and st.session_state.nlp_results:
-    # Setup tabs
     tab_summary, tab_nlp, tab_entities, tab_qa = st.tabs([
         "📊 Summary & Sentiment Insights", 
         "⚙️ NLP Preprocessing Analysis", 
@@ -369,7 +336,6 @@ if st.session_state.raw_text and st.session_state.nlp_results:
         "💬 Interactive Q&A Assistant"
     ])
     
-    # ------------------- TAB 1: SUMMARY & SENTIMENT -------------------
     with tab_summary:
         col_sum, col_sent = st.columns([3, 2])
         
@@ -377,7 +343,6 @@ if st.session_state.raw_text and st.session_state.nlp_results:
             st.markdown("### 📝 Generated Summaries")
             
             if st.session_state.summary_tldr:
-                # Segmented Summary Tabs
                 sum_style = st.radio(
                     "Select Summary Format",
                     ["Quick TL;DR", "Bullet Points", "Detailed Narrative"],
@@ -398,7 +363,6 @@ if st.session_state.raw_text and st.session_state.nlp_results:
             else:
                 st.info("Summaries require a GEMINI_API_KEY in the environment.")
                 
-            # Original text basic metrics
             nlp_res = st.session_state.nlp_results
             st.markdown("#### Text Statistics")
             met1, met2, met3, met4 = st.columns(4)
@@ -420,7 +384,6 @@ if st.session_state.raw_text and st.session_state.nlp_results:
                 score = analysis.get("confidence_score", 0.0)
                 explanation = analysis.get("sentiment_explanation", "")
                 
-                # Sentiment badge
                 badge_html = ""
                 if sent == "Positive":
                     badge_html = f"<div class='badge-positive'>🟢 Positive ({score*100:.1f}%)</div>"
@@ -434,7 +397,6 @@ if st.session_state.raw_text and st.session_state.nlp_results:
                 st.markdown(f"<p style='margin-top:15px; color:#E2E8F0;'><i>\"{explanation}\"</i></p>", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
                 
-                # Emotion Breakdown Chart
                 emotions = analysis.get("emotion_breakdown", {})
                 if emotions:
                     st.markdown("#### Emotion Signature")
@@ -465,7 +427,6 @@ if st.session_state.raw_text and st.session_state.nlp_results:
             else:
                 st.info("Sentiment insights require a GEMINI_API_KEY in the environment.")
                 
-    # ------------------- TAB 2: NLP PREPROCESSING -------------------
     with tab_nlp:
         st.markdown("### ⚙️ NLP Pipelines & Preprocessing Steps")
         st.markdown("Traditional NLP pipeline transforms raw paragraphs into clean, structured tokens ready for machine learning.")
@@ -504,7 +465,6 @@ if st.session_state.raw_text and st.session_state.nlp_results:
                 st.markdown("**Grammatical POS Tagging (First 50 terms):**")
                 tags_df = pd.DataFrame(nlp_res["pos_tags"][:50], columns=["Word", "POS Tag"])
                 
-                # Add descriptions for popular tags
                 tag_meanings = {
                     'NN': 'Noun, singular', 'NNS': 'Noun, plural', 'NNP': 'Proper noun, singular',
                     'VB': 'Verb, base form', 'VBD': 'Verb, past tense', 'VBG': 'Verb, gerund/present participle',
@@ -519,7 +479,6 @@ if st.session_state.raw_text and st.session_state.nlp_results:
         with col_wc:
             st.markdown("#### ☁️ Text Word Cloud")
             if nlp_res["word_frequencies"]:
-                # Generate Word Cloud
                 try:
                     wc = WordCloud(
                         width=800, 
@@ -539,7 +498,6 @@ if st.session_state.raw_text and st.session_state.nlp_results:
             else:
                 st.info("No words to construct word cloud.")
 
-    # ------------------- TAB 3: KEYWORD & ENTITY HUB -------------------
     with tab_entities:
         col_ent, col_freq = st.columns([3, 2])
         
@@ -550,7 +508,6 @@ if st.session_state.raw_text and st.session_state.nlp_results:
             if st.session_state.llm_analysis and "entities" in st.session_state.llm_analysis:
                 entities = st.session_state.llm_analysis["entities"]
                 if entities:
-                    # Group entities by type
                     ent_groups = {}
                     for e in entities:
                         etype = e.get("type", "Other")
@@ -561,7 +518,6 @@ if st.session_state.raw_text and st.session_state.nlp_results:
                             ent_groups[etype] = []
                         ent_groups[etype].append((ename, erelevance))
                         
-                    # Display entity lists
                     for etype, items in ent_groups.items():
                         st.markdown(f"**{etype}s**")
                         for ename, erelevance in items:
@@ -603,16 +559,13 @@ if st.session_state.raw_text and st.session_state.nlp_results:
             else:
                 st.info("No frequency records available.")
 
-    # ------------------- TAB 4: INTERACTIVE Q&A CHAT -------------------
     with tab_qa:
         st.markdown("### 💬 Grounded Q&A Assistant")
         st.markdown("Ask the LLM any question about the article. The assistant is grounded and will only answer based on facts provided in the text.")
         
-        # Display chat interface
         if not st.session_state.api_key:
             st.info("Please configure the GEMINI_API_KEY environment variable to use the Q&A Assistant.")
         else:
-            # Suggest questions layout
             st.markdown("💡 **Suggested Questions:**")
             sug_col1, sug_col2, sug_col3 = st.columns(3)
             
@@ -633,31 +586,24 @@ if st.session_state.raw_text and st.session_state.nlp_results:
             
             st.divider()
             
-            # Message box container
             chat_container = st.container(height=350)
             
             with chat_container:
-                # Render existing chat
                 for role, message in st.session_state.chat_history:
                     with st.chat_message("user" if role == "User" else "assistant"):
                         st.write(message)
             
-            # Handle new inputs
             user_input = st.chat_input("Ask a question about the article...")
             
-            # If a user typed a question OR clicked a suggestion
             active_question = user_input or clicked_sug
             
             if active_question:
-                # Add to chat history immediately
                 st.session_state.chat_history.append(("User", active_question))
                 
-                # Render user message
                 with chat_container:
                     with st.chat_message("user"):
                         st.write(active_question)
                         
-                # Generate AI response
                 with st.spinner("Analyzing article context..."):
                     response = llm_utils.answer_article_question(
                         text=st.session_state.raw_text,
@@ -666,10 +612,8 @@ if st.session_state.raw_text and st.session_state.nlp_results:
                         api_key=st.session_state.api_key
                     )
                 
-                # Add response to history
                 st.session_state.chat_history.append(("Assistant", response))
                 
-                # Render assistant message
                 with chat_container:
                     with st.chat_message("assistant"):
                         st.write(response)
