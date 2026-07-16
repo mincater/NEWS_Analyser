@@ -9,8 +9,8 @@ from bs4 import BeautifulSoup
 import requests
 from dotenv import load_dotenv
 
-# Load local environment variables if present
-load_dotenv()
+# Load local environment variables if present (override=True updates keys dynamically)
+load_dotenv(override=True)
 
 # Import our custom utilities
 import nlp_utils
