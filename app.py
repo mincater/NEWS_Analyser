@@ -135,39 +135,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- PRE-LOADED SAMPLE ARTICLES ---
-SAMPLE_ARTICLES = {
-    "Fusion Energy Breakthrough (Positive)": {
-        "title": "Scientists Replicate Net Energy Gain in Nuclear Fusion Experiment",
-        "text": """Federal researchers at the Lawrence Livermore National Laboratory in California have achieved a net energy gain in a fusion reaction for the second time, achieving a higher energy yield than in their historic first breakthrough last December. 
-
-Nuclear fusion involves fusing light elements like hydrogen to form heavier elements, releasing a massive burst of energy in the process. Unlike nuclear fission, which splits atoms and powers commercial reactors today, fusion produces no long-lived radioactive waste and poses no risk of a nuclear meltdown. If scaled up, it could provide a virtually limitless source of clean, carbon-free electricity to fight global climate change.
-
-In the latest experiment, conducted on July 30, 2023, scientists using the National Ignition Facility's 192-beam laser system achieved an energy yield of approximately 3.15 megajoules, which was greater than the 2.05 megajoules of laser energy delivered to the fuel target. The result represents a crucial step forward, proving that the 'ignition' process can be replicated and optimized.
-
-Despite the excitement, commercializing fusion energy remains decades away. Critical challenges include scaling the technology to fire lasers multiple times per second, increasing the efficiency of the lasers, and building materials durable enough to withstand the extreme temperatures and neutron bombardment of a fusion power plant. Nonetheless, government officials and private investors are pouring billions of dollars into the sector, hoping to accelerate the transition to clean energy."""
-    },
-    "Market Downturn (Negative)": {
-        "title": "Global Markets Plunge as Inflation Fears and Interest Rate Hikes Loom",
-        "text": """Stock markets across Asia, Europe, and the United States suffered sharp declines today as investors reacted to rising inflation data and aggressive signals from central banks indicating further interest rate hikes. 
-
-The Dow Jones Industrial Average dropped over 800 points, while the tech-heavy Nasdaq Composite slid 3.5%, entering correction territory. European indices like the FTSE 100 and DAX closed down more than 2.5%, and Tokyo's Nikkei fell by 2.1%. The widespread sell-off reflects growing anxiety that the Federal Reserve's battle against persistent inflation could tip the global economy into a severe recession.
-
-Economists note that supply chain disruptions, rising energy costs driven by geopolitical conflicts, and tight labor markets have pushed core consumer prices to their highest levels in forty years. In response, central bankers have made it clear that their primary objective is restoring price stability, even if it causes short-term economic pain.
-
-High interest rates make borrowing more expensive for consumers and businesses alike, slowing down economic activity and compressing corporate profit margins. Tech companies and startups, which rely heavily on cheap capital to fund future growth, have been hit hardest by the shift in monetary policy. Financial analysts warn that market volatility is likely to persist in the coming quarters as the global economy adjusts to a new era of higher capital costs."""
-    },
-    "SpaceX Starlink Launch (Neutral)": {
-        "title": "SpaceX Successfully Launches 22 Starlink Satellites Into Low-Earth Orbit",
-        "text": """SpaceX launched a Falcon 9 rocket carrying 22 Starlink internet satellites into orbit early Thursday morning from the Cape Canaveral Space Force Station in Florida.
-
-The Falcon 9 rocket lifted off at 12:01 a.m. EDT, lighting up the night sky along the Space Coast. Approximately eight and a half minutes later, the rocket's first-stage booster made a successful precision landing on the droneship 'A Shortfall of Gravitas' stationed in the Atlantic Ocean. This marked the 15th flight for this particular booster, demonstrating the aerospace company's progress in launcher reusability.
-
-The 22 satellites were successfully deployed into low-Earth orbit about an hour after launch. They will join SpaceX's massive Starlink constellation, which now consists of more than 5,000 active satellites designed to provide high-speed, low-latency broadband internet access to remote and underserved locations worldwide.
-
-SpaceX continues to expand its satellite internet network, targeting coverage in regions that lack traditional fiber or cellular infrastructure. The company plans to launch dozens of additional missions throughout the year to complete its first-generation constellation. Meanwhile, astronomers continue to raise concerns about the brightness of these satellite trains, arguing that they interfere with scientific observations and astrophotography."""
-    }
-}
 
 # --- WEB SCRAPING UTILITY ---
 def fetch_article_text(url: str) -> dict:
@@ -278,21 +245,13 @@ with st.sidebar:
     st.subheader("Source Selection")
     source_type = st.radio(
         "Choose Input Method",
-        ["Load Sample Article", "Enter Article URL", "Paste Raw Text"]
+        ["Enter Article URL", "Paste Raw Text"]
     )
     
     article_title = ""
     article_text = ""
     
-    if source_type == "Load Sample Article":
-        sample_choice = st.selectbox(
-            "Select Sample News", 
-            list(SAMPLE_ARTICLES.keys())
-        )
-        article_title = SAMPLE_ARTICLES[sample_choice]["title"]
-        article_text = SAMPLE_ARTICLES[sample_choice]["text"]
-        
-    elif source_type == "Enter Article URL":
+    if source_type == "Enter Article URL":
         url_input = st.text_input(
             "News Article URL", 
             placeholder="https://techcrunch.com/..."
