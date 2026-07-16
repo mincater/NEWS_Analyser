@@ -232,8 +232,10 @@ if "llm_analysis" not in st.session_state:
     st.session_state.llm_analysis = None
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
-# API Key is read directly from environment
-st.session_state.api_key = os.environ.get("GEMINI_API_KEY", "")
+if "prev_source_type" not in st.session_state:
+    st.session_state.prev_source_type = ""
+if "api_key" not in st.session_state:
+    st.session_state.api_key = os.environ.get("GEMINI_API_KEY", "")
 
 # --- SIDEBAR: CONFIG & INPUTS ---
 with st.sidebar:
@@ -248,8 +250,20 @@ with st.sidebar:
         ["Enter Article URL", "Paste Raw Text"]
     )
     
-    article_title = ""
-    article_text = ""
+    # Clear analysis state if input method changes to avoid mixing content
+    if source_type != st.session_state.prev_source_type:
+        st.session_state.raw_text = ""
+        st.session_state.title = ""
+        st.session_state.nlp_results = None
+        st.session_state.summary_tldr = ""
+        st.session_state.summary_bullets = ""
+        st.session_state.summary_detailed = ""
+        st.session_state.llm_analysis = None
+        st.session_state.chat_history = []
+        st.session_state.prev_source_type = source_type
+        
+    staged_title = ""
+    staged_text = ""
     
     if source_type == "Enter Article URL":
         url_input = st.text_input(
@@ -261,17 +275,29 @@ with st.sidebar:
                 with st.spinner("Scraping webpage..."):
                     scrape_result = fetch_article_text(url_input)
                     if scrape_result["success"]:
-                        article_title = scrape_result["title"]
-                        article_text = scrape_result["text"]
+                        st.session_state.raw_text = scrape_result["text"]
+                        st.session_state.title = scrape_result["title"]
+                        st.session_state.nlp_results = None
+                        st.session_state.summary_tldr = ""
+                        st.session_state.summary_bullets = ""
+                        st.session_state.summary_detailed = ""
+                        st.session_state.llm_analysis = None
+                        st.session_state.chat_history = []
                         st.toast("Article fetched successfully!", icon="✅")
                     else:
                         st.error(f"Failed to fetch: {scrape_result['error']}")
             else:
                 st.warning("Please enter a valid URL first.")
                 
+        staged_title = st.session_state.title
+        staged_text = st.session_state.raw_text
+                
     elif source_type == "Paste Raw Text":
-        article_title = st.text_input("Article Title (Optional)", value="Pasted News Article")
-        article_text = st.text_area("Paste Full Article Text Here", height=250)
+        pasted_title = st.text_input("Article Title (Optional)", value="Pasted News Article")
+        pasted_text = st.text_area("Paste Full Article Text Here", height=250)
+        
+        staged_title = pasted_title
+        staged_text = pasted_text
 
     st.divider()
     st.info(
@@ -283,16 +309,16 @@ st.markdown("<h1 class='gradient-text'>News.AI Dashboard</h1>", unsafe_allow_htm
 st.markdown("<p class='subtitle-text'>Intelligent News Summarization, Sentiment Analysis, and Grounded QA powered by LLMs</p>", unsafe_allow_html=True)
 
 # Determine if we should show input text status
-if article_text:
+if staged_text:
     # Quick Summary Metrics of Input Text
-    char_count = len(article_text)
-    word_count = len(article_text.split())
+    char_count = len(staged_text)
+    word_count = len(staged_text.split())
     
     # Display details of the active text in an expander
-    with st.expander(f"📖 Active Article: {article_title or 'Untitled'} ({word_count} words)", expanded=False):
-        if article_title:
-            st.markdown(f"### {article_title}")
-        st.write(article_text)
+    with st.expander(f"📖 Active Article: {staged_title or 'Untitled'} ({word_count} words)", expanded=False):
+        if staged_title:
+            st.markdown(f"### {staged_title}")
+        st.write(staged_text)
         
     # Process trigger button
     trigger_col1, trigger_col2 = st.columns([1, 3])
@@ -302,25 +328,26 @@ if article_text:
     if start_analysis:
         # Clear past chat history on new article run
         st.session_state.chat_history = []
-        st.session_state.raw_text = article_text
-        st.session_state.title = article_title or "News Article"
+        st.session_state.raw_text = staged_text
+        st.session_state.title = staged_title or "News Article"
         
         with st.spinner("Analyzing text and generating summaries..."):
             # 1. Traditional NLP Preprocessing
-            st.session_state.nlp_results = nlp_utils.perform_nlp_preprocessing(article_text)
+            st.session_state.nlp_results = nlp_utils.perform_nlp_preprocessing(st.session_state.raw_text)
             
             # Check for API key
             if not st.session_state.api_key:
                 st.warning("⚠️ Traditional NLP completed. Please configure the GEMINI_API_KEY environment variable for LLM summarization, sentiment extraction, and QA.")
             else:
                 # 2. LLM Summaries (Parallelizable or sequential. Let's fetch them using our chains)
-                st.session_state.summary_tldr = llm_utils.generate_summary(article_text, "Quick TL;DR", st.session_state.api_key)
-                st.session_state.summary_bullets = llm_utils.generate_summary(article_text, "Bullet Points", st.session_state.api_key)
-                st.session_state.summary_detailed = llm_utils.generate_summary(article_text, "Detailed Summary", st.session_state.api_key)
+                st.session_state.summary_tldr = llm_utils.generate_summary(st.session_state.raw_text, "Quick TL;DR", st.session_state.api_key)
+                st.session_state.summary_bullets = llm_utils.generate_summary(st.session_state.raw_text, "Bullet Points", st.session_state.api_key)
+                st.session_state.summary_detailed = llm_utils.generate_summary(st.session_state.raw_text, "Detailed Summary", st.session_state.api_key)
                 
                 # 3. Structured Sentiment and Entity Extraction
-                st.session_state.llm_analysis = llm_utils.analyze_sentiment_and_entities(article_text, st.session_state.api_key)
+                st.session_state.llm_analysis = llm_utils.analyze_sentiment_and_entities(st.session_state.raw_text, st.session_state.api_key)
                 st.toast("Analysis complete!", icon="🎉")
+                st.rerun()
 
 else:
     # Empty state instructions
@@ -328,7 +355,7 @@ else:
     <div class='glass-card' style='text-align: center; padding: 50px 20px;'>
         <img src='https://img.icons8.com/color/96/news.png' width='100'/><br/><br/>
         <h3>Welcome to News.AI Engine</h3>
-        <p style='color: #8A99AD;'>Please load a sample article or input your own text/URL using the left sidebar, and click <b>Analyze Article</b> to begin.</p>
+        <p style='color: #8A99AD;'>Please load a news article using the left sidebar, and click <b>Analyze Article</b> to begin.</p>
     </div>
     """, unsafe_allow_html=True)
 
